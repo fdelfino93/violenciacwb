@@ -7,33 +7,32 @@
 ---
 
 ## 📝 Descrição do Projeto
-Este projeto tem como objetivo **analisar os homicídios no município de Curitiba**, utilizando um **dashboard interativo** construído com **[Streamlit](https://streamlit.io/)** e **[Plotly Express](https://plotly.com/python/plotly-express/)**.  
-
-O sistema permite **filtrar, visualizar e analisar dados** sobre diferentes tipos de homicídios, apresentando **KPIs, mapas de calor e gráficos dinâmicos** para facilitar a interpretação das informações.
+Este projeto oferece um **dashboard interativo** para a **análise de crimes em Curitiba**, incluindo dados sobre **Lesão Corporal, Homicídio Doloso, Feminicídio e Latrocínio**. Construído com **Streamlit** e **Plotly Express**, o painel permite uma exploração detalhada dos dados por meio de filtros dinâmicos e visualizações ricas.
 
 ---
 
 ## 🎯 Objetivo do Projeto
-Levantar uma análise completa dos **homicídios registrados na cidade de Curitiba**, com base nos dados fornecidos, permitindo que os usuários:  
-
-- Visualizem a evolução dos homicídios ao longo do tempo.
-- Realizem **filtros personalizados** para análise por tipo, local, data, etc.
-- Obtenham **insights rápidos** por meio de **KPIs automáticos**.
-- Gerem **gráficos interativos** para auxiliar na tomada de decisões.
+- **Centralizar e padronizar** dados de diferentes tipos de crimes.
+- Permitir **filtros dinâmicos** por tipo de crime e bairro.
+- Visualizar a **distribuição de crimes** em um mapa coroplético interativo de Curitiba.
+- Analisar a **evolução mensal** dos crimes.
+- Identificar os **bairros com maiores ocorrências** através de rankings (Top 10).
+- Comparar o desempenho dos bairros com **gráficos e heatmaps**.
 
 ---
 
 ## 🎥 Demonstração do Projeto
 
-> **📌 Dica**: Suba prints ou GIFs para mostrar o dashboard em funcionamento.  
-Substitua os links abaixo pelos seus arquivos/imagens.
+Abaixo estão algumas capturas de tela do painel em ação:
 
 <p align="center">
-  <img src="./assets/graficoum.png" width="800" alt="Dashboard Screenshot">
+  <em>Gráfico de linha comparando a evolução mensal dos crimes.</em>
+  <img src="./assets/graficoum.png" width="800" alt="Gráfico de evolução mensal dos crimes">
 </p>
 
 <p align="center">
-  <img src="./assets/mapacalor.png" width="800" alt="Dashboard Heatmap Animation">
+  <em>Mapa de calor coroplético mostrando a distribuição de crimes por bairro.</em>
+  <img src="./assets/mapacalor.png" width="800" alt="Mapa de calor de crimes por bairro">
 </p>
 
 ---
@@ -46,24 +45,41 @@ Substitua os links abaixo pelos seus arquivos/imagens.
 | **Streamlit** | Framework para criação de dashboards    |
 | **Pandas**    | Manipulação e análise de dados          |
 | **Plotly**    | Criação de gráficos interativos         |
-| **Pathlib**   | Manipulação de arquivos e diretórios    |
-| **Regex (re)**| Padronização e limpeza de colunas       |
+| **Geopandas** | Leitura e manipulação de dados geoespaciais |
+| **Unicodedata**| Normalização de texto (remover acentos) |
 
 ---
 
 ## 📂 Estrutura do Projeto
 
-├── 📁 dados
-│ ├── Corporal.csv
-│ ├── Doloso.csv
-│ ├── Feminicidio.csv
-│ ├── Latrocinio.csv
-├── projetoharve_fixed.py # Código principal do dashboard
-├── requirements.txt # Dependências do projeto
-├── README.md # Documentação do projeto
+.
+├── Corporal.csv
+├── Doloso.csv
+├── Feminicidio.csv
+├── Latrocinio.csv
+├── DIVISA_DE_BAIRROS.shp (e arquivos relacionados)
+├── dataset.py            # Código principal do dashboard
+├── requirements.txt      # Dependências do projeto
+└── README.md             # Documentação do projeto
+
 
 ## 🚀 Como Rodar o Projeto
 
-### 1️⃣ **Clonar o repositório**
+### 1️⃣ **Clone o repositório**
 ```bash
-git clone https://github.com/fdelfino93/violenciacwb
+git clone https://github.com/seu-usuario/seu-repositorio.git
+cd seu-repositorio
+```
+
+### 2️⃣ **Instale as dependências**
+Crie um ambiente virtual e instale as bibliotecas necessárias:
+```bash
+python -m venv venv
+source venv/bin/activate  # No Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3️⃣ **Execute o dashboard**
+```bash
+streamlit run dataset.py
+```
