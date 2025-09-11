@@ -70,31 +70,70 @@ df_filtrado = df_long[
     (df_long["bairro"].isin(bairros_selecionados))
 ]
 
+# --- Opção para mostrar rótulos de dados
+show_labels = st.sidebar.checkbox("Mostrar rótulos nos gráficos", value=False)
+
 # --- Gráfico 1: comparação de crimes por mês
 st.subheader("📊 Comparação de crimes por mês")
 fig1 = px.line(
     df_filtrado.groupby(["mês", "crime"], as_index=False)["casos"].sum(),
     x="mês", y="casos", color="crime", markers=True
 )
+if show_labels:
+    fig1.update_traces(text=df_filtrado.groupby(["mês", "crime"])["casos"].sum(), textposition="top center")
 st.plotly_chart(fig1, use_container_width=True)
 
 # --- Gráfico 2: comparação de crimes por bairro
 st.subheader("📊 Crimes por bairro")
+df_bairro = df_filtrado.groupby(["bairro", "crime"], as_index=False)["casos"].sum()
 fig2 = px.bar(
-    df_filtrado.groupby(["bairro", "crime"], as_index=False)["casos"].sum(),
-    x="bairro", y="casos", color="crime", barmode="group"
+    df_bairro,
+    x="bairro", y="casos", color="crime", barmode="group",
+    text="casos" if show_labels else None
 )
 st.plotly_chart(fig2, use_container_width=True)
 
-# --- Gráfico 3: heatmap bairro x mês
-st.subheader("🔥 Heatmap de casos por bairro e mês")
-fig3 = px.density_heatmap(
-    df_filtrado,
-    x="mês", y="bairro", z="casos",
-    color_continuous_scale="Reds",
-    facet_col="crime"
-)
-st.plotly_chart(fig3, use_container_width=True)
+# --- Gráfico 2.1: Top 10 bairros por crime
+st.subheader("🏆 Top 10 bairros com mais casos por crime")
+for crime in crimes_selecionados:
+    df_top10 = (
+        df_bairro[df_bairro["crime"] == crime]
+        .sort_values("casos", ascending=False)
+        .head(10)
+    )
+    fig_top10 = px.bar(
+        df_top10,
+        x="bairro", y="casos", color="bairro",
+        text="casos" if show_labels else None,
+        title=f"Top 10 bairros - {crime}"
+    )
+    st.plotly_chart(fig_top10, use_container_width=True)
+
+# --- Gráfico 3: heatmap bairro x mês (somente Top 10 por crime)
+st.subheader("🔥 Heatmap de casos por bairro e mês (Top 10 por crime)")
+
+df_top10_heatmap = []
+for crime in crimes_selecionados:
+    top_bairros = (
+        df_filtrado[df_filtrado["crime"] == crime]
+        .groupby("bairro", as_index=False)["casos"].sum()
+        .sort_values("casos", ascending=False)
+        .head(10)["bairro"]
+    )
+    df_top10_heatmap.append(df_filtrado[(df_filtrado["crime"] == crime) & (df_filtrado["bairro"].isin(top_bairros))])
+
+if df_top10_heatmap:
+    df_top10_heatmap = pd.concat(df_top10_heatmap)
+
+    fig3 = px.density_heatmap(
+        df_top10_heatmap,
+        x="mês", y="bairro", z="casos",
+        color_continuous_scale="Reds",
+        facet_col="crime"
+    )
+    st.plotly_chart(fig3, use_container_width=True)
+else:
+    st.info("Nenhum dado disponível para o heatmap.")
 
 # --- Gráfico 4: mapa interativo de Curitiba
 st.subheader("🗺️ Mapa interativo de crimes por bairro - Curitiba")
@@ -104,14 +143,12 @@ if os.path.isfile(shapefile_path):
     gdf = gpd.read_file(shapefile_path)
 
     # Garantir CRS WGS84 (EPSG:4326) para Mapbox
-    # - se não tiver CRS, define; se tiver diferente, reprojeta
     try:
         if gdf.crs is None:
             gdf.set_crs(epsg=4326, inplace=True)
         elif gdf.crs.to_epsg() != 4326:
             gdf = gdf.to_crs(epsg=4326)
     except Exception:
-        # fallback em casos raros
         gdf = gdf.set_crs(epsg=4326, allow_override=True)
 
     # Descobrir coluna do nome do bairro
@@ -121,36 +158,28 @@ if os.path.isfile(shapefile_path):
             col_bairro = candidate
             break
     if col_bairro is None:
-        col_bairro = gdf.columns  # fallback
+        col_bairro = gdf.columns[0]
 
-    # Normalização de texto
     gdf[col_bairro] = gdf[col_bairro].apply(normaliza_txt)
 
-    # Filtrar Curitiba somente se fizer sentido
     if "MUNICIPIO" in gdf.columns:
         gdf["MUNICIPIO_norm"] = gdf["MUNICIPIO"].apply(normaliza_txt)
         if (gdf["MUNICIPIO_norm"] == "CURITIBA").any():
             gdf = gdf[gdf["MUNICIPIO_norm"] == "CURITIBA"].copy()
 
-    # Preparar dados agregados para o mapa
     df_mapa = df_filtrado.groupby("bairro", as_index=False)["casos"].sum().copy()
     df_mapa["bairro_norm"] = df_mapa["bairro"].apply(normaliza_txt)
 
-    # Criar chave normalizada no gdf
     gdf["bairro_norm"] = gdf[col_bairro].apply(normaliza_txt)
-
-    # Merge por chave normalizada; manter a coluna original para hover
     gdf_merged = gdf.merge(df_mapa[["bairro_norm", "casos"]], on="bairro_norm", how="left")
     gdf_merged["casos"] = gdf_merged["casos"].fillna(0)
 
-    # Converter para GeoJSON
     geojson_bairros = json.loads(gdf_merged.to_json())
 
-    # Importante: locations deve casar com featureidkey
     fig_map = px.choropleth_mapbox(
         gdf_merged,
         geojson=geojson_bairros,
-        locations=col_bairro,  # mesma coluna existente nas properties do GeoJSON
+        locations=col_bairro,
         featureidkey=f"properties.{col_bairro}",
         color="casos",
         color_continuous_scale="Reds",
